@@ -15,6 +15,16 @@ public class Patent_Info {
 	private Integer flag;
 	private String remarks;
 	
+	public Patent_Info() {}
+	public Patent_Info(String ipc_code, String ipc_level, String upper_code, String date) {
+		super();
+		this.ipc_code = ipc_code;
+		this.ipc_level = ipc_level;
+		this.upper_code = upper_code;
+		this.date = date;
+	}
+
+
 	public String getIpc_code() {
 		return ipc_code;
 	}

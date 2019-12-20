@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import patent.entity.IpcDict;
 import patent.entity.Patent_Info;
 
 /**
@@ -16,58 +18,74 @@ import patent.entity.Patent_Info;
 public class DBOperation {
 	
 	/**
-	 * 获取数据库专利数据(by日期,level)
+	 * 查询一级分类
 	 */
-	public List<Patent_Info> getPatentInfo(String date,String level) {
-		
-		List<Patent_Info> list = new ArrayList<Patent_Info>();
-		
+	public List<IpcDict> getLevel_1(String ipc_code){
+		List<IpcDict> ipc_list = new ArrayList<IpcDict>();
 		// 获取连接
 		Connection con = DBUtilLocal.getConnection();
-		String sql = "select IPC_CODE,IPC_LEVEL,UPPER_CODE from patent_info where DATE=? AND flag IN(0) AND IPC_LEVEL=?;";
-		
+		String sql = "select IPC_CODE,IPC_LEVEL,UPPER_CODE from ipc_dict where UPPER_CODE=?;";
 		PreparedStatement statement = null;
 		try {
 			statement = con.prepareStatement(sql);
-			statement.setString(1, date);
-			statement.setString(2, level);
+			statement.setString(1, ipc_code);
 			ResultSet resultSet = statement.executeQuery();
 			while(resultSet.next()) {
-				Patent_Info p = new Patent_Info();
-				p.setDate(date);
-				p.setIpc_code(resultSet.getString("IPC_CODE"));
-				p.setIpc_level(resultSet.getString("IPC_LEVEL"));
-				p.setUpper_code(resultSet.getString("UPPER_CODE"));
-				list.add(p);
+				IpcDict ipc = new IpcDict();
+				ipc.setIpc_code(resultSet.getString("IPC_CODE"));
+				ipc.setIpc_level(resultSet.getString("IPC_LEVEL"));
+				ipc.setUpper_code(resultSet.getString("UPPER_CODE"));
+				ipc_list.add(ipc);
 			}
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		
-		return list;
+		return ipc_list;
 	}
 	
 	/**
-	 * 	更新数据库的标识
+	 * 通过日期和ipc查询记录是否已经存在
+	 * @param date
+	 * @param ipc_code
+	 * @return
 	 */
-	public void update(Patent_Info p) {
+	public int alreadyExists(String date, String ipc_code) {
+		int count = 0;
+		Connection con = DBUtilLocal.getConnection();
+		String sql = "select COUNT(1) as count from patent_his where IPC_CODE=? and DATE=?;";
+		PreparedStatement statement = null;
 		try {
-			
+			statement = con.prepareStatement(sql);
+			statement.setString(1, date);
+			statement.setString(2, ipc_code);
+			ResultSet resultSet = statement.executeQuery();
+			while(resultSet.next()) {
+				count = Integer.parseInt(resultSet.getString("count"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return count;
+	}
+	
+	/**
+	 * 	添加记录
+	 */
+	public void addPatentInfo(Patent_Info patent) {
+		try {
 			// 获取连接
 			Connection con = DBUtilLocal.getConnection();
-			String sql = "update patent_info set flag=?,REMARKS=?,row_count=? where IPC_CODE=? and DATE=?";
-			
+			String sql = "insert patent_info set IPC_CODE=?, IPC_LEVEL=?, UPPER_CODE=?, ROW_COUNT=?, DATE=?, REMARKS=?";
 			PreparedStatement statement = null;
-			
 			statement = con.prepareStatement(sql);
-			statement.setInt(1, p.getFlag());
-			statement.setString(2, p.getRemarks());
-			statement.setInt(3, p.getRow_count());
-			statement.setString(4, p.getIpc_code());
-			statement.setString(5, p.getDate());
-			statement.executeUpdate();
-			
+			statement.setString(1, patent.getIpc_code());
+			statement.setString(2, patent.getIpc_level());
+			statement.setString(3, patent.getUpper_code());
+			statement.setInt(4, patent.getRow_count());
+			statement.setString(5, patent.getDate());
+			statement.setString(6, patent.getRemarks());
+			statement.execute();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
